@@ -1,3 +1,4 @@
-import SignIn from './SignIn'
+import { SignIn, OauthRedirect} from './SignIn';
+import Map from './Main';
 
-export {SignIn}
+export {SignIn, OauthRedirect, Map};
