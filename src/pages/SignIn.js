@@ -1,8 +1,6 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { Button, Container, Col, Row } from 'react-bootstrap';
 import { Redirect } from 'react-router-dom';
-import { push } from 'connected-react-router';
-import { connect } from 'react-redux';
 
 const SignIn = () => {
   return (
@@ -26,35 +24,42 @@ const SignIn = () => {
   )
 }
   
-let OauthRedirect = ({ push }) => {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("code") === null) {
+class OauthRedirect extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      loading: true,
+    };
+  }
+
+  render() {
+    if (this.state.loading) {
+      return (<div>loading...</div>)
+    }
     return <Redirect to="/home" />
   }
-  fetch(process.env.REACT_APP_AUTH_URL, {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      code: urlParams.get("code"),
-      redirect_uri: process.env.REACT_APP_GOOGLE_REDIRECT_URI
-    }, null, 2),
-    mode: 'cors',
-    cache: 'default'
-  }).then(
-    resp => resp.json()
-  ).then(
-    data => {
-      window.localStorage.setItem('access_token', data.access_token)
-      push('/home')
-    }
-  )
-  return <Redirect to="/" />
-}
 
-OauthRedirect = connect(null, { push })(OauthRedirect)
+  async componentDidMount() {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const resp = await fetch(process.env.REACT_APP_AUTH_URL, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        code: urlParams.get("code"),
+        redirect_uri: process.env.REACT_APP_GOOGLE_REDIRECT_URI
+      }, null, 2),
+      mode: 'cors',
+      cache: 'default'
+    })
+    const data = await resp.json()
+    window.localStorage.setItem('access_token', data.access_token)
+    this.setState({loading: false})
+  }
+}
 
 export {SignIn, OauthRedirect};
   

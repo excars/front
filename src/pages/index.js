@@ -1,4 +1,4 @@
 import { SignIn, OauthRedirect} from './SignIn';
-import Map from './Main';
+import Map from './Map';
 
 export {SignIn, OauthRedirect, Map};
