@@ -7,3 +7,5 @@ export const buildUrl = (url, params) => {
 export const authUrl = url => {
   return buildUrl(url, {access_token: window.localStorage.getItem('access_token')})
 }
+
+export default authUrl
