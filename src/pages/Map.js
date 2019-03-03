@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
 import { withScriptjs, withGoogleMap, GoogleMap,  } from "react-google-maps";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
-import { Container, Col, Row } from 'react-bootstrap';
+import { Container, Row } from 'react-bootstrap';
 
 import client from '../client'
 import { MapControls } from '../components'
@@ -23,8 +23,6 @@ export class Map extends Component {
       socketState: SOCKET_CLOSE,
       currentZoom: 13,
       myPosition: {lat: 34.6674943, long: 33.0395057},
-      role: null,
-      mode: 'idle'
     };
   }
 
@@ -32,8 +30,7 @@ export class Map extends Component {
     return (
       <Container fluid={true}>
         <Row>{this.renderMap()}</Row>
-        <Row><Col></Col></Row>
-        <MapControls state={{role: this.state.role, mode: this.state.mode}} setRole={this.setRole} />
+        <MapControls me={this.state.me} setRole={this.setRole.bind(this)} />
       </Container>
     )
   } 
@@ -60,9 +57,15 @@ export class Map extends Component {
     )
   }
 
-  async setRole (role, destination) {
+  async setRole (role) {
+    let destination = {
+      name: 'Porto Bello',
+      latitude: 34.6708917,
+      longitude: 33.0419397
+    }
     await client.setRole(role, destination) 
     this.setState({role, destination})
+    this.setState({me: await client.getMe()})
   }
   
   onMapMounted(ref) {

@@ -25,8 +25,8 @@ class App extends Component {
           <Route path="/home" exact component={
             () => <Map 
               googleMapURL={process.env.REACT_APP_GOOGLE_MAP}
-              loadingElement={<div style={{ height: `100%` }} />}
-              containerElement={<div style={{ height: `500px` }} />}
+              loadingElement={<div style={{ height: `80%` }} />}
+              containerElement={<div style={{ height: `100vh` }} />}
               mapElement={<div style={{ height: `100%` }} />}
             />
           } />

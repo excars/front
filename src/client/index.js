@@ -5,13 +5,24 @@ class Client {
     this.socket = null
   }
 
-  async request(url, method='GET', body=null) {
+  async request(path, method='GET', body=null) {
     if (!window.localStorage.getItem('access_token')) {
       return
     }
+    if (body) {
+      body = JSON.stringify(body)
+    }
+    let url = `${process.env.SCHEMA}://${process.env.BACKEND_BASE}/${path}` 
     const resp = await fetch(
       authUrl(url), 
-      {method, body}
+      {
+        method,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body
+      }
     )
     if (resp.status === 401) {  
       window.localStorage.removeItem('access_token')
@@ -21,11 +32,11 @@ class Client {
   } 
 
   async getMe() {
-    return this.request(process.env.REACT_APP_ME_URL)  
+    return this.request('api/profiles/me')  
   }
 
   async setRole(role, destination) {
-    return this.request(process.env.REACT_APP_SET_ROLE_URL, 'POST', {
+    return this.request('api/rides/join', 'POST', {
       role,
       destination
     })
@@ -71,6 +82,10 @@ class Client {
       }
     }))
   };
+
+  leave() {
+    this.request('/api/rides/leave', 'delete')
+  }
 }
 
 export default new Client()
