@@ -4,10 +4,10 @@ import {  Col, Row, Button, Image } from 'react-bootstrap';
 export default class MapControls extends Component {
 
   render() {
-    if (!this.props.me || !this.props.me.role) {
+    if (!this.props.user) {
       return this.renderSetRole()
     }
-    return this.renderInfo(this.props.me)
+    return this.renderInfo(this.props.user)
   }
 
   renderInfo(profile) {

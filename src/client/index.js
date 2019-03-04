@@ -1,8 +1,12 @@
 import authUrl from './utils';
 
+const SOCKET_OPEN = 'SOCKET_OPEN'
+const SOCKET_CLOSE = 'SOCKET_CLOSE'
+
 class Client {
   constructor() {
     this.socket = null
+    this.socketState = SOCKET_CLOSE
   }
 
   async request(path, method='GET', body=null) {
@@ -12,7 +16,7 @@ class Client {
     if (body) {
       body = JSON.stringify(body)
     }
-    let url = `${process.env.SCHEMA}://${process.env.BACKEND_BASE}/${path}` 
+    let url = `${process.env.REACT_APP_SCHEMA}://${process.env.REACT_APP_BACKEND_BASE}/${path}` 
     const resp = await fetch(
       authUrl(url), 
       {
@@ -35,6 +39,14 @@ class Client {
     return this.request('api/profiles/me')  
   }
 
+  async getInfo(uid) {
+    return this.request(`api/profiles/${uid}`)  
+  }
+
+  async getCurrentRide() {
+    return this.request('api/rides/current')
+  }
+
   async setRole(role, destination) {
     return this.request('api/rides/join', 'POST', {
       role,
@@ -42,28 +54,25 @@ class Client {
     })
   }
 
-  connect(onOpen, onClose)  {
+  connect()  {
     this.socket = new WebSocket(authUrl(process.env.REACT_APP_STREAM_WS));
     
     this.socket.onopen = function() {
-      console.log("Соединение установлено.");
-      onOpen()
+      console.log("Socket opened");
+      this.socketState = SOCKET_OPEN
     };
     
     this.socket.onclose = function(event) {
       if (event.wasClean) {
-        alert('Соединение закрыто чисто');
+        console.log('Socket closed normaly');
       } else {
-        console.log('Обрыв соединения'); // например, "убит" процесс сервера
+        console.log('Socket closed with errors');
       }
-      console.log('Код: ' + event.code + ' причина: ' + event.reason);
-  
-      onClose()
+      this.socketState = SOCKET_CLOSE
     };
     
     this.socket.onmessage = function(event) {
       console.log(event.data)
-      // alert("Получены данные " + event.data);
     };
     
     this.socket.onerror = function(error) {
@@ -72,15 +81,17 @@ class Client {
   }
 
   sendLocation(position) {
-    this.socket.send(JSON.stringify({
-      type: 'LOCATION', 
-      data: {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude, 
-        course: position.coords.heading,
-        speed: position.coords.speed
-      }
-    }))
+    if (this.socketState === SOCKET_OPEN) {
+      this.socket.send(JSON.stringify({
+        type: 'LOCATION', 
+        data: {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude, 
+          course: position.coords.heading,
+          speed: position.coords.speed
+        }
+      }))
+    }
   };
 
   leave() {

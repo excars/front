@@ -8,8 +8,6 @@ import client from '../client'
 import { MapControls } from '../components'
 import car from './images/car.png'
 
-const SOCKET_OPEN = 'SOCKET_OPEN'
-const SOCKET_CLOSE = 'SOCKET_CLOSE'
 const LOCATION_UPDATE_INTERVAL = 10000
 
 export class Map extends Component {
@@ -20,7 +18,8 @@ export class Map extends Component {
       auth: Boolean(window.localStorage.getItem('access_token')),
       usersLocations: [],
       me: null,
-      socketState: SOCKET_CLOSE,
+      ride: null,
+      target: null,
       currentZoom: 13,
       myPosition: {lat: 34.6674943, long: 33.0395057},
     };
@@ -30,7 +29,7 @@ export class Map extends Component {
     return (
       <Container fluid={true}>
         <Row>{this.renderMap()}</Row>
-        <MapControls me={this.state.me} setRole={this.setRole.bind(this)} />
+        <MapControls user={this.state.target} setRole={this.setRole.bind(this)} />
       </Container>
     )
   } 
@@ -46,15 +45,26 @@ export class Map extends Component {
         defaultCenter={myPosition}
         ref={this.onMapMounted.bind(this)} 
         onZoomChanged={this.onZoomChanged.bind(this)}
+        onClick={this.onMapClick}
       >
         {this.state.me && <UserMarker
           position={myPosition}
+          me={this.state.me}
+          onClick={this.onMarkerClick}
           zoom={this.state.currentZoom}
           labelAnchor={new window.google.maps.Point(0, 0)}
           labelStyle={{transform:"rotate(90deg)"}}
         />}
       </GoogleMap>
     )
+  }
+
+  onMapClick = () => {
+    this.setState({target: null})
+  }
+
+  onMarkerClick = (target) => {
+    this.setState({target: target})
   }
 
   async setRole (role) {
@@ -77,15 +87,15 @@ export class Map extends Component {
   }
 
   async componentDidMount() {
-    this.setState({me: await client.getMe()})
+    let me, ride = await Promise.all([client.getMe(), client.getCurrentRide()])
+    this.setState({me})
     if (!window.localStorage.getItem('access_token')) {
       this.setState({auth: false})
       return
     }
-    client.connect(
-      () => {this.setState({socketState: SOCKET_OPEN})},
-      () => {this.setState({socketState: SOCKET_CLOSE})}
-    )
+    this.setState({ride})
+    
+    client.connect()
     this.updateMyPosition()
     this.timerIDMyPosition = setInterval(this.updateMyPosition.bind(this), LOCATION_UPDATE_INTERVAL)
   }
@@ -98,9 +108,7 @@ export class Map extends Component {
         heading: position.coords.heading
       }})
     
-      if (this.state.socketState === SOCKET_OPEN) {
-        client.sendLocation(position)
-      }
+      client.sendLocation(position)
     })
   }
 
@@ -124,11 +132,20 @@ class UserMarker extends Component {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 0
           }}
+          onClick={this.onClick.bind(this)}
         >
           <img src={car} alt={this.props.name} 
           height={size} width={size}/>
         </MarkerWithLabel>
     )
+  }
+
+  async onClick() {
+    if (this.props.me) {
+      this.props.onClick(this.props.me)      
+    } else {
+      this.props.onClick(await client.getInfo(this.props))
+    }
   }
 
   getSize() {
